@@ -280,7 +280,7 @@ def gameactions(message):
                 name.append(N)
             elif lastVal > newVal:
                 bot.send_message(message.chat.id, "Неплохо ты побил свой прошлый рекорд " + str(
-                    lastVal) + "\nТеперь твой рекорд " + newVal + "\n")
+                    lastVal) + "\nТеперь твой рекорд " + str(newVal) + "\n")
             newList = []
             id = 0
             sz = len(lst)
