@@ -272,13 +272,13 @@ def gameactions(message):
                 if N == name[id]:
                     new = False
                     lastVal = lst[id]
-                    lst[id] = max(lst[id], CntAct[ind] - 1)
+                    lst[id] = min(lst[id], CntAct[ind] - 1)
                     newVal = lst[id]
                 id += 1
             if new:
                 lst.append(CntAct[ind] - 1)
                 name.append(N)
-            elif lastVal < newVal:
+            elif lastVal > newVal:
                 bot.send_message(message.chat.id, "Неплохо ты побил свой прошлый рекорд " + str(
                     lastVal) + "\nТеперь твой рекорд " + newVal + "\n")
             newList = []
@@ -346,8 +346,9 @@ def gameactions(message):
             markup.add(item2)
             b[ind].append(item2.text)
         else:
-            markup.add(item5, item7)
+            markup.add(item7)
             if (CntMeat[ind] > 0):
+                markup.add(item5)
                 b[ind].append(item5.text)
             b[ind].append(item7.text)
         if CntWater[ind] > 0:
