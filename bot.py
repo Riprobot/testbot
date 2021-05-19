@@ -1,10 +1,13 @@
-import telebot
-import requests
+import config
+import logging
+from aiogram import Bot, Dispatcher, executor, types
+
+logging.basicConfig(level=logging.INFO)
 import random
-from telebot import types
 
 TOKEN = '948170738:AAF4VCIqAJCmBP-tzVnx11zRWZARJTxv118'
-bot = telebot.TeleBot(TOKEN)
+bot = Bot(token=TOKEN)
+dp = Dispatcher(bot)
 players = {}
 WantToPlay = []
 IsATTAKING = []
@@ -22,8 +25,8 @@ Win = []
 b = []
 
 
-@bot.message_handler(commands=['start'])
-def welcome(message):
+@dp.message_handler(commands=['start'])
+async def welcome(message):
     # keyboard
     global WantToPlay
     global LeftDistance
@@ -76,17 +79,16 @@ def welcome(message):
     item1 = types.KeyboardButton("ДА")
     item2 = types.KeyboardButton("НЕТ")
     markup.add(item1, item2)
-    bot.send_message(message.chat.id,
-                     "Привет {0.first_name}!\nХочешь поиграть в прикольную игру?".format(message.from_user,
-                                                                                         bot.get_me()),
-                     parse_mode='html', reply_markup=markup)
+    await bot.send_message(chat_id=message.chat.id, text=
+    "Привет {0.first_name}!\nХочешь поиграть в прикольную игру?".format(message.from_user),
+                           parse_mode='html', reply_markup=markup)
 
 
-@bot.message_handler(content_types=['text'])
-def actions(message):
+@dp.message_handler(content_types=['text'])
+async def actions(message):
     if message.chat.id not in players:
-        bot.send_message(message.chat.id,
-                         "Нажми на '/start' чтобы начать игру")
+        await bot.send_message(chat_id=message.chat.id,
+                               text="Нажми на '/start' чтобы начать игру")
         return
     ind = players[message.chat.id]
     global WantToPlay
@@ -94,43 +96,43 @@ def actions(message):
     global IsGameOn
     if IsATTAKING[ind] != -1 and message.text == '🍡': IsATTAKING[ind] = -1
     if IsATTAKING[ind] != -1:
-        ATTACK(ind)
+        await ATTACK(ind)
         return
     if IsGameOn[ind]:
-        gameactions(message)
+        await gameactions(message)
         return
 
     if message.chat.type == 'private':
         if message.text == 'ДА':
             WantToPlay[ind] = True
             IsGameOn[ind] = True
-            bot.send_message(message.chat.id, "Описание игры:\n")
-            bot.send_message(message.chat.id,
-                             "Ты застрял в пустыне, и теперь тебе нужно добраться до оазиса, но не все так просто, за тобой гонятся головорезы,они желают поскорее догнать тебя и убить, поэтому тебе нужно поторопится\n И да тебе повезло, ведь у тебя есть верблюд")
-            gameactions(message)
+            await bot.send_message(chat_id=message.chat.id, text="Описание игры:\n")
+            await bot.send_message(chat_id=message.chat.id,
+                                   text="Ты застрял в пустыне, и теперь тебе нужно добраться до оазиса, но не все так просто, за тобой гонятся головорезы,они желают поскорее догнать тебя и убить, поэтому тебе нужно поторопится\n И да тебе повезло, ведь у тебя есть верблюд")
+            await gameactions(message)
             return
 
         if message.text == 'НЕТ':
             if WantToPlay[ind] == True:
-                bot.send_message(message.chat.id, "НЕ ХОЧЕШЬ ИГРАТЬ В МОЮ ИГРУ!?😡😡😡😡😡\n")
-                bot.send_message(message.chat.id, "Даю последний шанс передумать\n")
-                bot.send_message(message.chat.id, "Хочешь играть в мою игру????????")
+                await bot.send_message(chat_id=message.chat.id, text="НЕ ХОЧЕШЬ ИГРАТЬ В МОЮ ИГРУ!?😡😡😡😡😡\n")
+                await bot.send_message(chat_id=message.chat.id, text="Даю последний шанс передумать\n")
+                await bot.send_message(chat_id=message.chat.id, text="Хочешь играть в мою игру????????")
                 WantToPlay[ind] = False
             else:
                 IsATTAKING[ind] = message.chat.id
-                ATTACK(ind)
+                await ATTACK(ind)
 
             return
-        bot.send_message(message.chat.id, "Выбери что-то из меню")
+        await bot.send_message(chat_id=message.chat.id, text="Выбери что-то из меню")
 
 
-def ATTACK(ind):
+async def ATTACK(ind):
     global IsATTAKING
     if IsATTAKING[ind] != -1:
-        bot.send_message(IsATTAKING[ind], "Ты в бане, иди в баню ")
+        await bot.send_message(chat_id=IsATTAKING[ind], text="Ты в бане, иди в баню ")
 
 
-def gameactions(message):
+async def gameactions(message):
     ind = players[message.chat.id]
     global LeftDistance
     global PersonAlive
@@ -147,7 +149,7 @@ def gameactions(message):
     HasAction = True
 
     if Win[ind]:
-        bot.send_message(message.chat.id, "Вы победили, хотите поиграть еще нажмите на '/start'")
+        await bot.send_message(chat_id=message.chat.id, text="Вы победили, хотите поиграть еще нажмите на '/start'")
         return
     if PersonAlive[ind]:
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
@@ -221,10 +223,10 @@ def gameactions(message):
             st += '\n'
             st += "<b>Система предупреждений:</b>\n"
             st += "Для верблюда и персонажа срабатывает предупреждение когда их здоровье меньше 30"
-            bot.send_message(message.chat.id, st, parse_mode='html')
+            await bot.send_message(chat_id=message.chat.id, text=st, parse_mode='html')
             HasAction = False
         else:
-            bot.send_message(message.chat.id, "Выбери что-то из меню")
+            await bot.send_message(chat_id=message.chat.id, text="Выбери что-то из меню")
             HasAction = False
         a = ""
         PersonHealth[ind] = min(100, PersonHealth[ind])
@@ -237,19 +239,20 @@ def gameactions(message):
             item1 = types.KeyboardButton("/start")
             markup.add(item1)
             PersonAlive[ind] = False
-            bot.send_message(message.chat.id,
-                             "К моему сожалению вы умерли от усталости, начните игру занаво оправив '/start'",
-                             reply_markup=markup)
+            await bot.send_message(chat_id=message.chat.id,
+                                   text="К моему сожалению вы умерли от усталости, начните игру занаво оправив '/start'",
+                                   reply_markup=markup)
             return
         if (LeftDistance[ind] <= 0 and PersonAlive[ind] == True):
             markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
             item1 = types.KeyboardButton("😉Хорошо")
 
             markup.add(item1)
-            bot.send_message(message.chat.id, "Поздравляем вы победили и дорабрались до оазиза за " + str(
-                CntAct[
-                    ind] - 1) + " дней" + "\nЕсли вам понравилась моя игра то можете поделится ей со своими друзьями\n",
-                             reply_markup=markup)
+            await bot.send_message(chat_id=message.chat.id,
+                                   text="Поздравляем вы победили и дорабрались до оазиза за " + str(
+                                       CntAct[
+                                           ind] - 1) + " дней" + "\nЕсли вам понравилась моя игра то можете поделится ей со своими друзьями\n",
+                                   reply_markup=markup)
             Win[ind] = True
             f = open('records.txt')
             all = f.readlines()
@@ -272,15 +275,15 @@ def gameactions(message):
                 if N == name[id]:
                     new = False
                     lastVal = lst[id]
-                    lst[id] = min(lst[id], CntAct[ind] - 1)
+                    lst[id] = max(lst[id], CntAct[ind] - 1)
                     newVal = lst[id]
                 id += 1
             if new:
                 lst.append(CntAct[ind] - 1)
                 name.append(N)
-            elif lastVal > newVal:
-                bot.send_message(message.chat.id, "Неплохо ты побил свой прошлый рекорд " + str(
-                    lastVal) + "\nТеперь твой рекорд " + str(newVal) + "\n")
+            elif lastVal < newVal:
+                await bot.send_message(chat_id=message.chat.id, text="Неплохо ты побил свой прошлый рекорд " + str(
+                    lastVal) + "\nТеперь твой рекорд " + newVal + "\n")
             newList = []
             id = 0
             sz = len(lst)
@@ -304,7 +307,7 @@ def gameactions(message):
             while sz != id and (id) < 3:
                 st += "<b>" + str(newList[id][1]) + "</b>" + " прошел игру за " + str(newList[id][0]) + " дней" + "\n"
                 id += 1
-            bot.send_message(message.chat.id, st + "\n", parse_mode='html')
+            await bot.send_message(chat_id=message.chat.id, text=st + "\n", parse_mode='html')
             return
         DistanceToBandits[ind] += f - LeftDistance[ind]
         if HasAction == True:
@@ -314,9 +317,9 @@ def gameactions(message):
             item1 = types.KeyboardButton("/start")
             markup.add(item1)
             PersonAlive[ind] = False
-            bot.send_message(message.chat.id,
-                             "К моему сожалению на вас напали бандиты, начните игру занаво нажав на '/start'",
-                             reply_markup=markup)
+            await bot.send_message(chat_id=message.chat.id,
+                                   text="К моему сожалению на вас напали бандиты, начните игру занаво нажав на '/start'",
+                                   reply_markup=markup)
             return
 
         if CamelHealth[ind] <= 30 and CamelAlive[ind] == True:
@@ -346,9 +349,8 @@ def gameactions(message):
             markup.add(item2)
             b[ind].append(item2.text)
         else:
-            markup.add(item7)
+            markup.add(item5, item7)
             if (CntMeat[ind] > 0):
-                markup.add(item5)
                 b[ind].append(item5.text)
             b[ind].append(item7.text)
         if CntWater[ind] > 0:
@@ -358,9 +360,10 @@ def gameactions(message):
         markup.add(item8)
         a += "👳🏻‍♂️Бандитам до вас осталось " + str(DistanceToBandits[ind]) + "км\n"
         a += "⛲️До оазиса осталось " + str(LeftDistance[ind]) + "км"
-        bot.send_message(message.chat.id, a, reply_markup=markup, parse_mode='html')
+        await bot.send_message(chat_id=message.chat.id, text=a, reply_markup=markup, parse_mode='html')
     else:
-        bot.send_message(message.chat.id, "Вы умерли, начните игру заново нажав на '/start'")
+        await bot.send_message(chat_id=message.chat.id, text="Вы умерли, начните игру заново нажав на '/start'")
 
 
-bot.polling(none_stop=True)
+if __name__ == '__main__':
+    executor.start_polling(dp, skip_updates=True)
