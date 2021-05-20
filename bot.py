@@ -268,7 +268,7 @@ async def gameactions(message):
             newVal = min(lastVal, CntAct[ind] - 1)
             if lastVal > newVal:
                 await bot.send_message(chat_id=message.chat.id, text="Неплохо ты побил свой прошлый рекорд " + str(
-                    lastVal) + "\nТеперь твой рекорд " + newVal + "\n")
+                    lastVal) + "\nТеперь твой рекорд " + str(newVal) + "\n")
             add_db(N, newVal)
             db.commit()
             newList = db.get_players()
