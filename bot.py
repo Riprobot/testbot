@@ -1,6 +1,6 @@
-import config
 import logging
 from aiogram import Bot, Dispatcher, executor, types
+from sqliter import SQLiter
 
 logging.basicConfig(level=logging.INFO)
 import random
@@ -8,6 +8,8 @@ import random
 TOKEN = '948170738:AAF4VCIqAJCmBP-tzVnx11zRWZARJTxv118'
 bot = Bot(token=TOKEN)
 dp = Dispatcher(bot)
+db = SQLiter(
+    'postgres://rsvuryejidlyzs:f824cdd6ae8af1fe80f3982809631e202b9972a8d3ac2382fc14a0d4361a1967@ec2-54-216-17-9.eu-west-1.compute.amazonaws.com:5432/d804h1sknk085j')
 players = {}
 WantToPlay = []
 IsATTAKING = []
@@ -23,7 +25,6 @@ CntMeat = []
 CntAct = []
 Win = []
 b = []
-
 
 @dp.message_handler(commands=['start'])
 async def welcome(message):
@@ -124,6 +125,14 @@ async def actions(message):
 
             return
         await bot.send_message(chat_id=message.chat.id, text="Выбери что-то из меню")
+
+
+def add_db(user_id, points):
+    if (not db.player_exists(user_id)):
+        db.add_player(user_id, points)
+    else:
+        if (db.get_points(user_id) > points):
+            db.update_points(user_id, points)
 
 
 async def ATTACK(ind):
@@ -254,58 +263,20 @@ async def gameactions(message):
                                            ind] - 1) + " дней" + "\nЕсли вам понравилась моя игра то можете поделится ей со своими друзьями\n",
                                    reply_markup=markup)
             Win[ind] = True
-            f = open('records.txt')
-            all = f.readlines()
-            sz = (int)(all[0].split('\n')[0])
-            id = 1
-            lst = []
-            name = []
-            while sz != 0:
-                lst.append(int(all[id].split()[0]))
-                name.append(all[id].split()[1])
-                id += 1
-                sz -= 1
-            N = "{0.username}".format(message.from_user, bot.get_me())
-            id = 0
-            new = True
-            lastVal = -1
-            newVal = -1
-            sz = len(lst)
-            while id != sz:
-                if N == name[id]:
-                    new = False
-                    lastVal = lst[id]
-                    lst[id] = max(lst[id], CntAct[ind] - 1)
-                    newVal = lst[id]
-                id += 1
-            if new:
-                lst.append(CntAct[ind] - 1)
-                name.append(N)
-            elif lastVal < newVal:
+            N = "{0.username}".format(message.from_user)
+            lastVal = db.get_points(N)
+            newVal = min(lastVal, CntAct[ind] - 1)
+            if lastVal > newVal:
                 await bot.send_message(chat_id=message.chat.id, text="Неплохо ты побил свой прошлый рекорд " + str(
                     lastVal) + "\nТеперь твой рекорд " + newVal + "\n")
-            newList = []
-            id = 0
-            sz = len(lst)
-            while id != sz:
-                newList.append((lst[id], name[id]))
-                id += 1
-
-            newList.sort(key=lambda x: x[0])
-            f = open('records.txt', 'w')
-            f.write(str(len(newList)) + "\n")
-            sz = len(newList)
-            id = 0
-            while id != sz:
-                f.write(str(newList[id][0]) + " " + str(newList[id][1]) + "\n")
-                id += 1
-            f.close()
-
+            add_db(N, newVal)
+            db.commit()
+            newList = db.get_players()
             st = "Топ 3 игроков:\n"
             sz = len(newList)
             id = 0
             while sz != id and (id) < 3:
-                st += "<b>" + str(newList[id][1]) + "</b>" + " прошел игру за " + str(newList[id][0]) + " дней" + "\n"
+                st += "<b>" + str(newList[id][0]) + "</b>" + " прошел игру за " + str(newList[id][1]) + " дней" + "\n"
                 id += 1
             await bot.send_message(chat_id=message.chat.id, text=st + "\n", parse_mode='html')
             return
@@ -323,10 +294,9 @@ async def gameactions(message):
             return
 
         if CamelHealth[ind] <= 30 and CamelAlive[ind] == True:
-            a += ("🐪 <b>Ваш верблюд устает ему следует ОТДОХНУТЬ</b> 🐪\n".format(message.from_user,
-                                                                                   bot.get_me()))
+            a += "🐪 <b>Ваш верблюд устает ему следует ОТДОХНУТЬ</b> 🐪\n".format()
         if PersonHealth[ind] <= 30:
-            a += "🚶 <b>Вы устаете вам следует ОТДОХНУТЬ</b> 🚶\n".format(message.from_user, bot.get_me())
+            a += "🚶 <b>Вы устаете вам следует ОТДОХНУТЬ</b> 🚶\n".format()
         b[ind].clear()
         item1 = types.KeyboardButton("Ехать быстро на верблюде")
         item2 = types.KeyboardButton("Ехать спокойно на вердблюде")
